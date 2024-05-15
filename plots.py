@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 import KDEpy
 
 from typing import Any, Iterable, List, Optional, Tuple, Union
@@ -38,6 +37,15 @@ def display_df(df: pd.DataFrame, max_rows: Optional[int] = None, max_columns: Op
 # ------------------------------------------------------------------- #
 # --------------------       PLotting Tools      -------------------- #
 # ------------------------------------------------------------------- #
+
+
+def if_str_map(variable, data):
+    """"""
+    if isinstance(variable, str):
+        assert data is not None
+        return data[variable].values
+
+    return variable
 
 
 def titleize(label: str) -> str:
@@ -104,9 +112,44 @@ def create_subplot(n_plots: int, ncols: int = 2, width: float = 16, height_per: 
     return fig, axes
 
 
-def kde_smooth(values: np.ndarray, bw: Union[str, float] = "silverman", kernel: str = "gaussian",
-               n_grid: int = 400, clip: Optional[Tuple[float, float]] = None, mean: bool = True):
+def align_pair_arrays(pairs, n=None):
     """"""
+    if n is None:
+        n = np.max([len(p[0]) for p in pairs])
+
+    x_max_min = np.max([np.min(x) for (x,y) in pairs])
+    x_min_max = np.min([np.max(x) for (x,y) in pairs])
+    x_n = np.linspace(x_max_min, x_min_max, n)
+
+    return x_n, np.array([np.interp(x_n, *pair) for pair in pairs])
+
+
+def kde_smooth(values: np.ndarray, bw: Union[str, float] = "silverman",
+               kernel: str = "gaussian", n_grid: int = 400,
+               clip: Optional[Tuple[float, float]] = None, axis=None,
+               mean: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    """"""
+
+
+    if axis is not None:
+        # TODO: clean up and make own function
+        assert axis < np.ndim(values)
+
+        shape = values.shape
+        ndims = len(shape)
+
+        index = [slice(0, -1)] * len(values.shape)
+
+        ret_values = []
+        for i in range(values.shape[axis]):
+            index[axis] = i
+            ret_value = kde_smooth(values[tuple(index)], bw=bw, kernel=kernel,
+                                   n_grid=n_grid, clip=clip, mean=mean)
+            ret_values.append(ret_value)
+
+        x_n, y_n = align_pair_arrays(ret_values)
+
+        return x_n, y_n
 
     if isinstance(bw, float):
         bw = bw * np.nanstd(values)
@@ -232,6 +275,7 @@ def kde_plot(x, data: Optional[dict] = None, hue: Optional[str] = None, ax=None,
     if label:
         ax.legend()
 
+    ax.set_ylabel("Density")
     return ax
 
 

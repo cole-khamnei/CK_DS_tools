@@ -104,15 +104,6 @@ def tab_shift(text: str, tab_size: int = 4) -> str:
     return tab + text.replace("\n", f"\n{tab}").rstrip(tab)
 
 
-def if_str_map(variable, data):
-    """"""
-    if isinstance(variable, str):
-        assert data is not None
-        return data[variable].values
-
-    return variable
-
-
 def multiprocess_pool(function, param_sets: list, n_processes: int = 4):
     """ Runs a function in parallel using the pool multiprocess"""
 
